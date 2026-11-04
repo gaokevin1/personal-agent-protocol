@@ -34,10 +34,11 @@ with the duties in the [extension](https://personalagentprotocol.org/docs/extens
 protocol plans to remove it, on a date set when version 1.0 is published. Choose it only as a bridge
 to Direct or Device Sign-In, and record when you plan to add those.
 
-**Issuer** ([3.2](https://personalagentprotocol.org/docs/spec#oauth-server)). If any sign-in type
-is offered, whether the existing identity provider is the issuer, or an issuer for Personal Agents
-sits alongside it and signs Users in through it. Decide before launch, because changing the issuer
-later makes every User sign in again. See `patterns/identity-provider.md`.
+**Issuer** ([3.2](https://personalagentprotocol.org/docs/spec#oauth-server)). Whether the existing
+identity provider is the issuer, with `auth.disabled` until sign-in is ready, or an issuer only for
+Personal Agents sits on it, or a separate issuer signs Users in through it. Decide before launch,
+because changing the issuer later makes every User sign in again. See
+`patterns/identity-provider.md`.
 
 **Scopes** ([4.7](https://personalagentprotocol.org/docs/spec#scopes)). Which scopes to offer,
 usually the OAuth scopes the Company already has, where each one

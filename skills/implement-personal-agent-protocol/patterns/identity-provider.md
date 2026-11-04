@@ -5,27 +5,35 @@ Company's existing identity provider, such as a CIAM service, can usually stay i
 is which server Personal Agents use as the Company's issuer
 ([3.2](https://personalagentprotocol.org/docs/0.3/spec#oauth-server)):
 
-- **The identity provider is the issuer.** Personal Agents are one more OAuth client there.
-- **An issuer for Personal Agents, alongside the identity provider.** A separate OAuth server
-  issues Personal Agents' tokens and signs Users in through the identity provider.
+- **No issuer.** The Company offers signed-out Sessions only, which rely on the Session header
+  alone.
+- **The identity provider is the issuer.** Personal Agents are one more OAuth client there. Until
+  you're ready to let them sign in, set `auth.disabled`.
+- **An issuer only for Personal Agents, on the identity provider.** For example,
+  `https://auth.example.com/agents`, sharing accounts, servers, and keys with the main issuer.
+- **A separate issuer.** Another OAuth server issues Personal Agents' tokens and signs Users in
+  through the identity provider.
 
-Either way, Users sign in with the methods, MFA, and fraud checks they have today. Signed-out
-Sessions use neither: they rely on the Session header alone.
+In every option with an issuer, Users sign in with the methods, MFA, and fraud checks they have
+today.
 
 ```mermaid
 flowchart TD
   start([Do tasks need the User's account?]) -->|No| none[No issuer, signed-out Sessions only]
   start -->|Yes| gaps{Does the identity provider meet<br/>the table below?}
-  gaps -->|Yes, or with configuration| idp[The identity provider is the issuer]
+  gaps -->|Yes, or with configuration| limit{Can it limit Personal Agents<br/>by client?}
+  limit -->|Yes| idp[The identity provider is the issuer]
+  limit -->|No| sub[An issuer only for Personal Agents,<br/>on the identity provider]
   gaps -->|Only metadata or Mediated Sign-In| shim[The identity provider is the issuer,<br/>with a small handler in front]
-  gaps -->|No| agent[An issuer for Personal Agents]
+  gaps -->|No| agent[A separate issuer]
+  idp -.->|Not ready for sign-in| disabled[Set auth.disabled]
 ```
 
 Choose before launch. User IDs, Sessions, and refresh tokens belong to the issuer, so changing it
 later makes every User sign in again
 ([3.2](https://personalagentprotocol.org/docs/0.3/spec#oauth-server)). If the domain's protected
 resource metadata already names the identity provider, it is already the Company's identifier,
-even for signed-out Sessions.
+even for signed-out Sessions. Keep it and set `auth.disabled` rather than launch without it.
 
 ## What the issuer needs
 
@@ -34,10 +42,10 @@ Record each row in `plan/survey.md`.
 | Requirement                                                                                                                                                                                             | If the identity provider can't                                             |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | Clients identified by a client ID metadata document URL ([4.1](https://personalagentprotocol.org/docs/0.3/spec#agent-identity))                                                                             | Register the Personal Agents you accept by `client_id` URL. Reject others. |
-| `private_key_jwt` with `ES256`, and assertion `aud` exactly the issuer ([4.1](https://personalagentprotocol.org/docs/0.3/spec#agent-identity))                                                              | An issuer for Personal Agents.                                             |
-| PKCE `S256`, exact `redirect_uri` with loopback ports, `iss` in every redirect ([4.2](https://personalagentprotocol.org/docs/0.3/spec#direct-sign-in))                                                      | An issuer for Personal Agents.                                             |
-| A refresh token from every sign-in, and no scopes beyond those requested ([4.4](https://personalagentprotocol.org/docs/0.3/spec#refresh-tokens), [4.7](https://personalagentprotocol.org/docs/0.3/spec#scopes)) | Usually configuration. Otherwise an issuer for Personal Agents.            |
-| RFC 7009 revocation ([4.6](https://personalagentprotocol.org/docs/0.3/spec#revocation))                                                                                                                     | An issuer for Personal Agents.                                             |
+| `private_key_jwt` with `ES256`, and assertion `aud` exactly the issuer ([4.1](https://personalagentprotocol.org/docs/0.3/spec#agent-identity))                                                              | A separate issuer.                                                         |
+| PKCE `S256`, exact `redirect_uri` with loopback ports, `iss` in every redirect ([4.2](https://personalagentprotocol.org/docs/0.3/spec#direct-sign-in))                                                      | A separate issuer.                                                         |
+| A refresh token from every sign-in, and no scopes beyond those requested ([4.4](https://personalagentprotocol.org/docs/0.3/spec#refresh-tokens), [4.7](https://personalagentprotocol.org/docs/0.3/spec#scopes)) | Usually configuration. Otherwise a separate issuer.                        |
+| RFC 7009 revocation ([4.6](https://personalagentprotocol.org/docs/0.3/spec#revocation))                                                                                                                     | A separate issuer.                                                         |
 | `grant_types_supported` and `protected_resources` in its metadata ([3.2](https://personalagentprotocol.org/docs/0.3/spec#oauth-server))                                                                     | A metadata handler, if the issuer is on your domain.                       |
 | Tokens that say which `client_id` they were issued to ([5.3](https://personalagentprotocol.org/docs/0.3/spec#session-verification))                                                                         | Introspection.                                                             |
 | The device grant, if you offer Device Sign-In ([4.3](https://personalagentprotocol.org/docs/0.3/spec#device-sign-in))                                                                                       | Offer Direct Sign-In only.                                                 |
@@ -68,9 +76,18 @@ domain you control, a handler at the metadata URL can add `protected_resources` 
 `grant_types_supported` to the provider's metadata. A handler at the token endpoint can take the
 Mediated Sign-In grant, check credentials through the provider's API, and pass everything else
 through, if the provider can issue tokens for a sign-in your server completed. A gap in the
-authorization flow itself needs an issuer for Personal Agents.
+authorization flow itself needs a separate issuer.
 
-## An issuer for Personal Agents
+## An issuer only for Personal Agents, on the identity provider
+
+If the identity provider can't limit scopes or sign-in by client, a second issuer on it, such as
+`https://auth.example.com/agents`, can serve only Personal Agents. It shares accounts, servers, and
+signing keys with the main issuer
+([guides](https://personalagentprotocol.org/docs/0.3/guides#company-agent-issuer)). The domain's
+protected resource metadata lists both issuers, and `auth.issuer` names this one, as in
+[Discovery](#discovery) below.
+
+## A separate issuer
 
 A separate OAuth server, such as `https://agents.example.com`, meets
 [4.8](https://personalagentprotocol.org/docs/0.3/spec#oauth-additions) itself and is an OpenID Connect
@@ -84,7 +101,7 @@ client of the identity provider.
 
 ```mermaid
 flowchart LR
-  PA[Personal Agent] -->|"authorize, token, revoke"| AS[Issuer for Personal Agents]
+  PA[Personal Agent] -->|"authorize, token, revoke"| AS[Separate issuer]
   AS -->|OpenID Connect| IdP[Identity provider]
   Apps[Website and apps] --> IdP
   PA -->|"Session header (aud = agent issuer)<br/>+ access token"| GW[Gateway] --> API[APIs, MCP, conversations]
@@ -106,7 +123,7 @@ metadata needs the domain in `protected_resources`.
 sequenceDiagram
   participant PA as Personal Agent
   participant Site as example.com
-  participant AS as Issuer for Personal Agents
+  participant AS as Separate issuer
   PA->>Site: poppy.json
   Site->>PA: auth.issuer = https://agents.example.com
   PA->>Site: /.well-known/oauth-protected-resource
@@ -125,7 +142,7 @@ signed in.
 sequenceDiagram
   participant PA as Personal Agent
   participant B as User's browser
-  participant AS as Issuer for Personal Agents
+  participant AS as Separate issuer
   participant IdP as Identity provider
   PA->>B: Open the agent issuer's authorization_endpoint
   B->>AS: /authorize (client_id URL, scope, PKCE)
@@ -148,7 +165,7 @@ it can send the User to the identity provider.
 sequenceDiagram
   participant PA as Personal Agent
   participant U as User's phone
-  participant AS as Issuer for Personal Agents
+  participant AS as Separate issuer
   participant IdP as Identity provider
   PA->>AS: device_authorization_endpoint
   AS->>PA: user_code, verification_uri on agents.example.com
@@ -168,7 +185,7 @@ the identity provider's APIs. Never store credentials or codes.
 ```mermaid
 sequenceDiagram
   participant PA as Personal Agent
-  participant AS as Issuer for Personal Agents
+  participant AS as Separate issuer
   participant IdP as Identity provider
   PA->>AS: Mediated Sign-In grant with credentials
   AS->>IdP: Check credentials, send a one-time code
@@ -189,7 +206,7 @@ through its webhooks ([guides](https://personalagentprotocol.org/docs/0.3/guides
 sequenceDiagram
   participant W as Account settings
   participant IdP as Identity provider
-  participant AS as Issuer for Personal Agents
+  participant AS as Separate issuer
   participant PA as Personal Agent
   W->>AS: Disconnect: revoke this agent's refresh tokens
   IdP->>AS: Password reset or deleted account: revoke all
@@ -197,5 +214,5 @@ sequenceDiagram
   AS->>PA: invalid_grant, so it continues signed out
 ```
 
-A provider hosting several Companies gives each its own issuer
+A platform that runs the separate issuer for several Companies gives each its own issuer
 ([guides](https://personalagentprotocol.org/docs/0.3/guides#company-hosting)).

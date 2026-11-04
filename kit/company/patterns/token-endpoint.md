@@ -4,8 +4,8 @@ Use the Company's existing OAuth authorization server for account access
 ([4](https://personalagentprotocol.org/docs/spec#oauth)). Poppy sign-in is plain OAuth: standard
 grants (authorization code with PKCE, device authorization, refresh tokens), `private_key_jwt`
 client authentication with client ID metadata documents, RFC 7009 revocation, and ordinary access
-and refresh tokens. If the existing server can't meet Poppy's additions to OAuth, an issuer for
-Personal Agents can sit alongside it (`patterns/identity-provider.md`).
+and refresh tokens. If the existing server can't meet Poppy's additions to OAuth, a separate issuer
+can sit alongside it (`patterns/identity-provider.md`).
 
 Signed-out access never reaches this server. The Personal Agent signs a Session header for each
 request with a delegated key, and resources verify it
