@@ -167,10 +167,12 @@ sequenceDiagram
   PA->>AS: Mediated Sign-In grant with credentials
   AS->>IdP: Check credentials
   IdP->>AS: Valid, and the account
-  Note over AS,IdP: One-time code sent to the User
-  AS->>PA: code_required, sign_in_id
-  PA->>AS: sign_in_id, one_time_code
-  AS->>AS: Check the code
+  opt If the Company wants a second step
+    Note over AS,IdP: One-time code sent to the User
+    AS->>PA: code_required, sign_in_id
+    PA->>AS: sign_in_id, one_time_code
+    AS->>AS: Check the code
+  end
   AS->>PA: access_token, refresh_token, scope
 ```
 
