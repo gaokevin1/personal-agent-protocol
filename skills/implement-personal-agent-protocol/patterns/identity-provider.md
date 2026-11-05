@@ -33,13 +33,16 @@ You need a separate issuer if your identity provider can't support any of these:
 
 ## The identity provider is the issuer
 
-- Needs: the metadata fields in [3.2](https://personalagentprotocol.org/docs/0.3/spec#oauth-server),
-  protected resource metadata on each domain naming the provider, and a consent page that shows
-  the Personal Agent's `client_id` domain (`patterns/sign-in.md`).
-- Watch for: first-party scopes granted by default. Limit Personal Agents by client. If the provider
-  can't, a second issuer on it, such as `https://auth.example.com/agents`, can serve only Personal
-  Agents ([guides](https://personalagentprotocol.org/docs/0.3/guides#company-agent-issuer)). Leave
-  `openid` out of `scopes_supported`, or describe it, since Personal Agents don't use ID tokens.
+The provider's metadata needs the fields in
+[3.2](https://personalagentprotocol.org/docs/0.3/spec#oauth-server), and each domain's protected
+resource metadata names the provider. Its consent page also needs to show the Personal Agent's
+`client_id` domain (`patterns/sign-in.md`).
+
+Many providers grant first-party scopes to every client by default, so limit what Personal Agents
+can get by client. If the provider can't, a second issuer on it, such as
+`https://auth.example.com/agents`, can serve only Personal Agents
+([guides](https://personalagentprotocol.org/docs/0.3/guides#company-agent-issuer)). Leave `openid` out
+of `scopes_supported`, or describe it, since Personal Agents don't use ID tokens.
 
 ```mermaid
 flowchart LR
@@ -60,13 +63,14 @@ three ways: through the identity provider with OpenID Connect or SAML, by sendin
 existing login page and completing the request through the issuer's API, or on its own, for example
 with passkeys or email codes. Personal Agents don't see which one you use.
 
-- Needs: its own metadata, a way to sign Users in, and resources and the website's browser-session
-  `/authorize` endpoint that accept its tokens.
-- Watch for: identifiers. Session JWTs use the new issuer as their audience
-  ([5.1](https://personalagentprotocol.org/docs/0.3/spec#user-ids)). Put the identity provider's stable
-  user ID in its tokens, never an email address. If the issuer signs Users in itself, it has to
-  match each person to their existing account. Match only on an email or phone number both systems
-  have verified, since a weak match lets someone take over another person's account.
+The separate issuer publishes its own metadata. Your resources, and the website's browser-session
+`/authorize` endpoint, accept its tokens.
+
+Session JWTs use the separate issuer as their audience
+([5.1](https://personalagentprotocol.org/docs/0.3/spec#user-ids)). Put the identity provider's stable
+user ID in its tokens, never an email address. If the issuer signs Users in itself, it has to match
+each person to their existing account. Match only on an email or phone number both systems have
+verified, since a weak match lets someone take over another person's account.
 
 ```mermaid
 flowchart LR
