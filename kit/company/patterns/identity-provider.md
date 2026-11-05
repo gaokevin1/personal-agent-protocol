@@ -12,14 +12,6 @@ choice is which server Personal Agents use as the Company's issuer
 
 In both options, Users sign in the way they do today.
 
-```mermaid
-flowchart TD
-  gaps{Does the identity provider have a gap<br/>that needs a separate issuer?}
-  gaps -->|No| idp[The identity provider is the issuer]
-  gaps -->|Yes| agent[A separate issuer]
-  idp -.->|Not ready for sign-in| disabled[Set auth.disabled]
-```
-
 Pick the issuer before you publish `poppy.json`. User IDs, Sessions, and refresh tokens belong to
 the issuer, so changing it later makes every User sign in again
 ([3.2](https://personalagentprotocol.org/docs/spec#oauth-server)). If the domain's protected
