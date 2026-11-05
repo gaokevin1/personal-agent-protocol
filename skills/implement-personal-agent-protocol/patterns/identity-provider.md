@@ -55,16 +55,18 @@ front of its token endpoint (`patterns/token-endpoint.md`).
 ## A separate issuer
 
 A separate OAuth server, such as `https://agents.example.com`, meets
-[4.8](https://personalagentprotocol.org/docs/0.3/spec#oauth-additions) itself, and signs Users in
-through the identity provider, for example with OpenID Connect or SAML, or by sending them to your
-existing login page and completing the request through the issuer's API. Personal Agents never see
-that connection.
+[4.8](https://personalagentprotocol.org/docs/0.3/spec#oauth-additions) itself. It can sign Users in
+three ways: through the identity provider with OpenID Connect or SAML, by sending them to your
+existing login page and completing the request through the issuer's API, or on its own, for example
+with passkeys or email codes. Personal Agents don't see which one you use.
 
-- Needs: its own metadata, a way to sign Users in through the identity provider, and resources and
-  the website's browser-session `/authorize` endpoint that accept its tokens.
+- Needs: its own metadata, a way to sign Users in, and resources and the website's browser-session
+  `/authorize` endpoint that accept its tokens.
 - Watch for: identifiers. Session JWTs use the new issuer as their audience
-  ([5.1](https://personalagentprotocol.org/docs/0.3/spec#user-ids)). Put the identity provider's
-  stable user ID in its tokens, never an email address.
+  ([5.1](https://personalagentprotocol.org/docs/0.3/spec#user-ids)). Put the identity provider's stable
+  user ID in its tokens, never an email address. If the issuer signs Users in itself, it has to
+  match each person to their existing account. Match only on an email or phone number both systems
+  have verified, since a weak match lets someone take over another person's account.
 
 ```mermaid
 flowchart LR
@@ -146,8 +148,9 @@ sequenceDiagram
 
 ### Mediated Sign-In
 
-If you offer the extension, its grant handler checks credentials and sends one-time codes through
-the identity provider's APIs. Never store credentials or codes.
+If you offer the extension, its grant handler checks credentials against the identity provider,
+where the passwords are kept. The separate issuer can send the one-time code itself, or have the
+identity provider send it. Never store credentials or codes.
 
 ```mermaid
 sequenceDiagram
@@ -155,10 +158,12 @@ sequenceDiagram
   participant AS as Separate issuer
   participant IdP as Identity provider
   PA->>AS: Mediated Sign-In grant with credentials
-  AS->>IdP: Check credentials, send a one-time code
+  AS->>IdP: Check credentials
+  IdP->>AS: Valid, and the account
+  Note over AS,IdP: The issuer, or the identity provider, sends the User a one-time code
   AS->>PA: code_required, sign_in_id
   PA->>AS: sign_in_id, one_time_code
-  AS->>IdP: Check the code
+  AS->>AS: Check the code
   AS->>PA: access_token, refresh_token, scope
 ```
 
