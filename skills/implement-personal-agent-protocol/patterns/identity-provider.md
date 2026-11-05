@@ -5,19 +5,16 @@ Company's existing identity provider, in-house or from a vendor, can usually sta
 choice is which server Personal Agents use as the Company's issuer
 ([3.2](https://personalagentprotocol.org/docs/0.3/spec#oauth-server)):
 
-- **No issuer.** The Company offers signed-out Sessions only, which rely on the Session header
-  alone.
 - **The identity provider is the issuer.** Personal Agents are one more OAuth client there. Until
   you're ready to let them sign in, set `auth.disabled`.
 - **A separate issuer.** Another OAuth server issues Personal Agents' tokens and signs Users in
   through the identity provider.
 
-In every option with an issuer, Users sign in the way they do today.
+In both options, Users sign in the way they do today.
 
 ```mermaid
 flowchart TD
-  start([Do tasks need the User's account?]) -->|No| none[No issuer, signed-out Sessions only]
-  start -->|Yes| gaps{Does it have a gap that<br/>needs a separate issuer?}
+  gaps{Does the identity provider have a gap<br/>that needs a separate issuer?}
   gaps -->|No| idp[The identity provider is the issuer]
   gaps -->|Yes| agent[A separate issuer]
   idp -.->|Not ready for sign-in| disabled[Set auth.disabled]
