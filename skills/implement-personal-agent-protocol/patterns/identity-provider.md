@@ -18,16 +18,18 @@ for signed-out Sessions. Keep it and set `auth.disabled` rather than publish wit
 
 ## Gaps in the identity provider
 
-Most identity providers need some changes. If yours doesn't accept clients identified by URL, you
-can register the Personal Agents you accept by their `client_id` URL instead
-([4.1](https://personalagentprotocol.org/docs/0.3/spec#agent-identity)). Gaps in its metadata, client
-authentication, or the authorization flow need a separate issuer: the metadata fields 3.2 requires,
-including `protected_resources` ([3.2](https://personalagentprotocol.org/docs/0.3/spec#oauth-server)),
-`private_key_jwt` with `ES256` and an assertion `aud` of exactly the issuer
-([4.1](https://personalagentprotocol.org/docs/0.3/spec#agent-identity)), PKCE `S256`, exact
-`redirect_uri` matching, and `iss` in every redirect
-([4.2](https://personalagentprotocol.org/docs/0.3/spec#direct-sign-in)), and RFC 7009 revocation
-([4.6](https://personalagentprotocol.org/docs/0.3/spec#revocation)).
+If your identity provider doesn't accept clients identified by URL, you can register the Personal
+Agents you accept by their `client_id` URL instead ([4.1](https://personalagentprotocol.org/docs/0.3/spec#agent-identity)).
+
+You need a separate issuer if your identity provider can't support any of these:
+
+- The metadata fields 3.2 requires, including `protected_resources`
+  ([3.2](https://personalagentprotocol.org/docs/0.3/spec#oauth-server)).
+- `private_key_jwt` with `ES256`, and an assertion `aud` of exactly the issuer
+  ([4.1](https://personalagentprotocol.org/docs/0.3/spec#agent-identity)).
+- PKCE with `S256`, exact `redirect_uri` matching, and `iss` in every redirect
+  ([4.2](https://personalagentprotocol.org/docs/0.3/spec#direct-sign-in)).
+- RFC 7009 revocation ([4.6](https://personalagentprotocol.org/docs/0.3/spec#revocation)).
 
 ## The identity provider is the issuer
 
