@@ -35,7 +35,8 @@ even for signed-out Sessions. Keep it and set `auth.disabled` rather than launch
 
 ## Gaps in the identity provider
 
-Most gaps the survey finds have a fix that keeps the identity provider as the issuer:
+If the identity provider is missing something Poppy needs, you can work around these gaps and keep
+it as the issuer:
 
 - No client ID metadata documents: register the Personal Agents you accept by `client_id` URL, and
   reject others ([4.1](https://personalagentprotocol.org/docs/spec#agent-identity)).
