@@ -55,10 +55,11 @@ front of its token endpoint (`patterns/token-endpoint.md`).
 ## A separate issuer
 
 A separate OAuth server, such as `https://agents.example.com`, meets
-[4.8](https://personalagentprotocol.org/docs/spec#oauth-additions) itself and is an OpenID Connect
-client of the identity provider.
+[4.8](https://personalagentprotocol.org/docs/spec#oauth-additions) itself, and signs Users in
+through the identity provider, for example with OpenID Connect or SAML. Personal Agents never see
+that connection.
 
-- Needs: its own metadata, an OpenID Connect client at the identity provider, and resources and
+- Needs: its own metadata, a way to sign Users in through the identity provider, and resources and
   the website's browser-session `/authorize` endpoint that accept its tokens.
 - Watch for: identifiers. Session JWTs use the new issuer as their audience
   ([5.1](https://personalagentprotocol.org/docs/spec#user-ids)). Put the identity provider's
@@ -67,7 +68,7 @@ client of the identity provider.
 ```mermaid
 flowchart LR
   PA[Personal Agent] -->|"authorize, token, revoke"| AS[Separate issuer]
-  AS -->|OpenID Connect| IdP[Identity provider]
+  AS -->|"sign-in (e.g. OpenID Connect)"| IdP[Identity provider]
   Apps[Website and apps] --> IdP
   PA -->|"Session header (aud = agent issuer)<br/>+ access token"| GW[Gateway] --> API[APIs, MCP, conversations]
   GW -.->|agent tokens| AS
@@ -113,7 +114,7 @@ sequenceDiagram
   B->>AS: /authorize (client_id URL, scope, PKCE)
   AS->>B: Redirect to the identity provider
   B->>IdP: Existing sign-in
-  IdP->>AS: ID token with the account's sub
+  IdP->>AS: The account that signed in
   AS->>B: Consent page
   AS->>PA: code and iss = agent issuer, through the browser
   PA->>AS: Token request with client assertion
