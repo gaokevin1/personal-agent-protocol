@@ -14,8 +14,7 @@ is which server Personal Agents use as the Company's issuer
 - **A separate issuer.** Another OAuth server issues Personal Agents' tokens and signs Users in
   through the identity provider.
 
-In every option with an issuer, Users sign in with the methods, MFA, and fraud checks they have
-today.
+In every option with an issuer, Users sign in the way they do today.
 
 ```mermaid
 flowchart TD
