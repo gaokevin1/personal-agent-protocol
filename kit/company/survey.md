@@ -48,7 +48,11 @@ lists. Personal Agents find the issuer there
 - supports the device authorization grant (RFC 8628), PKCE with S256, `iss` in redirects (RFC 9207),
   revocation (RFC 7009), and resource indicators (RFC 8707);
 - issues opaque or JWT access tokens, and how resource servers validate them (introspection, JWKS,
-  or a shared session store).
+  or a shared session store);
+- runs on a domain the Company controls, such as a custom domain, and sends events such as password
+  resets and deleted accounts, for example by webhook.
+
+`patterns/identity-provider.md` lists what the issuer needs and what to do about each gap.
 
 **Sessions and accounts.** How the website keeps a signed-in session (cookie name, session store,
 lifetime), how a session is looked up on each request, and where session and token records live.

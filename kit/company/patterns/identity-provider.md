@@ -1,0 +1,199 @@
+# Pattern: the issuer and an existing identity provider
+
+Poppy sign-in is plain OAuth ([4](https://personalagentprotocol.org/docs/spec#oauth)), so a
+Company's existing identity provider, in-house or from a vendor, can usually stay in place. The
+choice is which server Personal Agents use as the Company's issuer
+([3.2](https://personalagentprotocol.org/docs/spec#oauth-server)):
+
+- **The identity provider is the issuer.** Personal Agents are one more OAuth client there. Until
+  you're ready to let them sign in, set `auth.disabled`.
+- **A separate issuer.** Another OAuth server issues Personal Agents' tokens. It signs Users in
+  through the identity provider, or on its own.
+
+Pick the issuer before you publish `poppy.json`. User IDs, Sessions, and refresh tokens belong to
+the issuer, so changing it later makes every User sign in again
+([3.2](https://personalagentprotocol.org/docs/spec#oauth-server)). If the domain's protected
+resource metadata already names the identity provider, it is already the Company's identifier, even
+for signed-out Sessions. Keep it and set `auth.disabled` rather than publish without it.
+
+## Gaps in the identity provider
+
+If your identity provider doesn't accept clients identified by URL, you can register the Personal
+Agents you accept by their `client_id` URL instead ([4.1](https://personalagentprotocol.org/docs/spec#agent-identity)).
+
+You need a separate issuer if your identity provider can't support any of these:
+
+- The metadata fields 3.2 requires, including `protected_resources`
+  ([3.2](https://personalagentprotocol.org/docs/spec#oauth-server)).
+- `private_key_jwt` with `ES256`, and an assertion `aud` of exactly the issuer
+  ([4.1](https://personalagentprotocol.org/docs/spec#agent-identity)).
+- PKCE with `S256`, exact `redirect_uri` matching, and `iss` in every redirect
+  ([4.2](https://personalagentprotocol.org/docs/spec#direct-sign-in)).
+- RFC 7009 revocation ([4.6](https://personalagentprotocol.org/docs/spec#revocation)).
+
+## The identity provider is the issuer
+
+The provider's metadata needs the fields in
+[3.2](https://personalagentprotocol.org/docs/spec#oauth-server), and each domain's protected
+resource metadata names the provider. Its consent page also needs to show the Personal Agent's
+`client_id` domain (`patterns/sign-in.md`).
+
+Many providers grant first-party scopes to every client by default, so limit what Personal Agents
+can get by client. If the provider can't, a second issuer on it, such as
+`https://auth.example.com/agents`, can serve only Personal Agents
+([guides](https://personalagentprotocol.org/docs/guides#company-agent-issuer)). Leave `openid` out
+of `scopes_supported`, or describe it, since Personal Agents don't use ID tokens.
+
+```mermaid
+flowchart LR
+  PA[Personal Agent] -->|"authorize, token, revoke"| IdP[Identity provider<br/>issuer]
+  Apps[Website and apps] --> IdP
+  PA -->|"Session header (aud = IdP issuer)<br/>+ access token"| GW[Gateway] --> API[APIs, MCP, conversations]
+  GW -.->|validate tokens| IdP
+```
+
+If you offer Mediated Sign-In and the provider can't add a grant type, put a small grant handler in
+front of its token endpoint (`patterns/token-endpoint.md`).
+
+## A separate issuer
+
+A separate OAuth server, such as `https://agents.example.com`, meets
+[4.8](https://personalagentprotocol.org/docs/spec#oauth-additions) itself. It can sign Users in
+three ways: through the identity provider with OpenID Connect or SAML, by sending them to your
+existing login page and completing the request through the issuer's API, or on its own, for example
+with passkeys or email codes. Personal Agents don't see which one you use.
+
+The separate issuer publishes its own metadata. Your resources, and the website's browser-session
+`/authorize` endpoint, accept its tokens.
+
+Session JWTs use the separate issuer as their audience
+([5.1](https://personalagentprotocol.org/docs/spec#user-ids)). Put the identity provider's stable
+user ID in its tokens, never an email address. If the issuer signs Users in itself, it has to match
+each person to their existing account. Match only on an email or phone number both systems have
+verified, since a weak match lets someone take over another person's account.
+
+```mermaid
+flowchart LR
+  PA[Personal Agent] -->|"authorize, token, revoke"| AS[Separate issuer]
+  AS -->|"sign-in (e.g. OpenID Connect)"| IdP[Identity provider]
+  Apps[Website and apps] --> IdP
+  PA -->|"Session header (aud = agent issuer)<br/>+ access token"| GW[Gateway] --> API[APIs, MCP, conversations]
+  GW -.->|agent tokens| AS
+  GW -.->|first-party tokens| IdP
+```
+
+Your services may accept only the identity provider's tokens. If so, the gateway can check the
+agent's token and call them with a credential they do accept, for the same user. That credential
+can't allow more than the agent's token does
+([guides](https://personalagentprotocol.org/docs/guides#company-internal)).
+
+### Discovery
+
+If the domain's protected resource metadata lists both servers, `auth.issuer` names the one
+Personal Agents use ([3.1](https://personalagentprotocol.org/docs/spec#fields)). Only that issuer's
+metadata needs the domain in `protected_resources`.
+
+```mermaid
+sequenceDiagram
+  participant PA as Personal Agent
+  participant Site as example.com
+  participant AS as Separate issuer
+  PA->>Site: poppy.json
+  Site->>PA: auth.issuer = https://agents.example.com
+  PA->>Site: /.well-known/oauth-protected-resource
+  Site->>PA: authorization_servers lists the identity provider and the agent issuer
+  PA->>AS: /.well-known/oauth-authorization-server
+  AS->>PA: issuer, endpoints, protected_resources with https://example.com
+```
+
+### Direct Sign-In
+
+The new issuer sends the User to the identity provider, then shows its own consent page. The
+consent page appears even when the identity provider skips sign-in for a browser that's already
+signed in.
+
+```mermaid
+sequenceDiagram
+  participant PA as Personal Agent
+  participant B as User's browser
+  participant AS as Separate issuer
+  participant IdP as Identity provider
+  PA->>B: Open the agent issuer's authorization_endpoint
+  B->>AS: /authorize (client_id URL, scope, PKCE)
+  AS->>B: Redirect to the identity provider
+  B->>IdP: Existing sign-in
+  IdP->>AS: The account that signed in
+  Note over AS,IdP: Or your existing login page,<br/>or the issuer's own sign-in
+  AS->>B: Consent page
+  AS->>PA: code and iss = agent issuer, through the browser
+  PA->>AS: Token request with client assertion
+  AS->>PA: access_token, refresh_token, scope
+```
+
+### Device Sign-In
+
+The verification page has to be on the new issuer's host or a protected resource's host, or a
+subdomain of either ([4.3](https://personalagentprotocol.org/docs/spec#device-sign-in)). From there
+it can send the User to the identity provider.
+
+```mermaid
+sequenceDiagram
+  participant PA as Personal Agent
+  participant U as User's phone
+  participant AS as Separate issuer
+  participant IdP as Identity provider
+  PA->>AS: device_authorization_endpoint
+  AS->>PA: user_code, verification_uri on agents.example.com
+  PA->>U: Link and code
+  U->>AS: Open the link
+  AS->>IdP: Existing sign-in
+  Note over AS,IdP: Or your existing login page,<br/>or the issuer's own sign-in
+  AS->>U: Confirm the code, consent page
+  PA->>AS: Poll the token endpoint
+  AS->>PA: access_token, refresh_token, scope
+```
+
+### Mediated Sign-In
+
+If you offer the extension, its grant handler checks credentials against the identity provider,
+where the passwords are kept. The separate issuer can send the one-time code itself, or have the
+identity provider send it. Never store credentials or codes.
+
+```mermaid
+sequenceDiagram
+  participant PA as Personal Agent
+  participant AS as Separate issuer
+  participant IdP as Identity provider
+  PA->>AS: Mediated Sign-In grant with credentials
+  AS->>IdP: Check credentials
+  IdP->>AS: Valid, and the account
+  opt If the Company wants a second step
+    Note over AS,IdP: One-time code sent to the User
+    AS->>PA: code_required, sign_in_id
+    PA->>AS: sign_in_id, one_time_code
+    AS->>AS: Check the code
+  end
+  AS->>PA: access_token, refresh_token, scope
+```
+
+### Revocation
+
+Users manage their account at the identity provider and their Personal Agents at the new issuer.
+Disconnecting a Personal Agent in account settings revokes its tokens at the new issuer. A password
+reset, compromise, or deleted account at the identity provider revokes them too, for example
+through its webhooks ([guides](https://personalagentprotocol.org/docs/guides#company-lifetimes)).
+
+```mermaid
+sequenceDiagram
+  participant W as Account settings
+  participant IdP as Identity provider
+  participant AS as Separate issuer
+  participant PA as Personal Agent
+  W->>AS: Disconnect: revoke this agent's refresh tokens
+  IdP->>AS: Password reset or deleted account: revoke all
+  PA->>AS: Refresh
+  AS->>PA: invalid_grant, so it continues signed out
+```
+
+A platform that runs the separate issuer for several Companies gives each its own issuer
+([guides](https://personalagentprotocol.org/docs/guides#company-hosting)).
