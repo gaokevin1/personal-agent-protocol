@@ -7,10 +7,8 @@ choice is which server Personal Agents use as the Company's issuer
 
 - **The identity provider is the issuer.** Personal Agents are one more OAuth client there. Until
   you're ready to let them sign in, set `auth.disabled`.
-- **A separate issuer.** Another OAuth server issues Personal Agents' tokens and signs Users in
-  through the identity provider.
-
-In both options, Users sign in the way they do today.
+- **A separate issuer.** Another OAuth server issues Personal Agents' tokens. It signs Users in
+  through the identity provider, or on its own.
 
 Pick the issuer before you publish `poppy.json`. User IDs, Sessions, and refresh tokens belong to
 the issuer, so changing it later makes every User sign in again
