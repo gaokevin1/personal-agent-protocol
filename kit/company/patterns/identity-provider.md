@@ -27,32 +27,20 @@ flowchart TD
   idp -.->|Not ready for sign-in| disabled[Set auth.disabled]
 ```
 
-Choose before launch. User IDs, Sessions, and refresh tokens belong to the issuer, so changing it
-later makes every User sign in again
+Pick the issuer before you publish `poppy.json`. User IDs, Sessions, and refresh tokens belong to
+the issuer, so changing it later makes every User sign in again
 ([3.2](https://personalagentprotocol.org/docs/spec#oauth-server)). If the domain's protected
-resource metadata already names the identity provider, it is already the Company's identifier,
-even for signed-out Sessions. Keep it and set `auth.disabled` rather than launch without it.
+resource metadata already names the identity provider, it is already the Company's identifier, even
+for signed-out Sessions. Keep it and set `auth.disabled` rather than publish without it.
 
 ## Gaps in the identity provider
 
-If the identity provider is missing something Poppy needs, you can work around these gaps and keep
-it as the issuer:
-
-- No client ID metadata documents: register the Personal Agents you accept by `client_id` URL, and
-  reject others ([4.1](https://personalagentprotocol.org/docs/spec#agent-identity)).
-- Refresh tokens or granted scopes that don't follow
-  [4.4](https://personalagentprotocol.org/docs/spec#refresh-tokens) and
-  [4.7](https://personalagentprotocol.org/docs/spec#scopes): usually configuration.
-- No `client_id` in its access tokens: introspection
-  ([5.3](https://personalagentprotocol.org/docs/spec#session-verification)).
-- No device grant: offer Direct Sign-In only.
-- No `protected_resources` or `grant_types_supported` in its metadata: a handler at the metadata
-  URL, if the issuer is on your domain
-  ([3.2](https://personalagentprotocol.org/docs/spec#oauth-server)).
-- No custom grant: a handler in front of the token endpoint, if you offer Mediated Sign-In.
-
-Gaps in client authentication or the authorization flow need a separate issuer: `private_key_jwt`
-with `ES256` and an assertion `aud` of exactly the issuer
+Most identity providers need some changes. If yours doesn't accept clients identified by URL, you
+can register the Personal Agents you accept by their `client_id` URL instead
+([4.1](https://personalagentprotocol.org/docs/spec#agent-identity)). Gaps in its metadata, client
+authentication, or the authorization flow need a separate issuer: the metadata fields 3.2 requires,
+including `protected_resources` ([3.2](https://personalagentprotocol.org/docs/spec#oauth-server)),
+`private_key_jwt` with `ES256` and an assertion `aud` of exactly the issuer
 ([4.1](https://personalagentprotocol.org/docs/spec#agent-identity)), PKCE `S256`, exact
 `redirect_uri` matching, and `iss` in every redirect
 ([4.2](https://personalagentprotocol.org/docs/spec#direct-sign-in)), and RFC 7009 revocation
@@ -75,11 +63,8 @@ flowchart LR
   GW -.->|validate tokens| IdP
 ```
 
-The metadata handler serves the provider's metadata with `protected_resources` and
-`grant_types_supported` added, and keeps the `issuer` and every endpoint exactly as the provider
-serves them. The Mediated Sign-In handler takes that grant, checks credentials through the
-provider's API, and passes every other request through. It works only if the provider can issue
-tokens for a sign-in your server completed.
+If you offer Mediated Sign-In and the provider can't add a grant type, put a small grant handler in
+front of its token endpoint (`patterns/token-endpoint.md`).
 
 ## An issuer only for Personal Agents, on the identity provider
 
