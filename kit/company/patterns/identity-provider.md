@@ -19,12 +19,11 @@ In every option with an issuer, Users sign in the way they do today.
 ```mermaid
 flowchart TD
   start([Do tasks need the User's account?]) -->|No| none[No issuer, signed-out Sessions only]
-  start -->|Yes| gaps{Does the identity provider meet<br/>the table below?}
-  gaps -->|Yes, or with configuration| limit{Can it limit Personal Agents<br/>by client?}
+  start -->|Yes| gaps{Does it have a gap that<br/>needs a separate issuer?}
+  gaps -->|No| limit{Can it limit Personal Agents<br/>by client?}
   limit -->|Yes| idp[The identity provider is the issuer]
   limit -->|No| sub[An issuer only for Personal Agents,<br/>on the identity provider]
-  gaps -->|Only metadata or Mediated Sign-In| shim[The identity provider is the issuer,<br/>with a small handler in front]
-  gaps -->|No| agent[A separate issuer]
+  gaps -->|Yes| agent[A separate issuer]
   idp -.->|Not ready for sign-in| disabled[Set auth.disabled]
 ```
 
@@ -34,24 +33,29 @@ later makes every User sign in again
 resource metadata already names the identity provider, it is already the Company's identifier,
 even for signed-out Sessions. Keep it and set `auth.disabled` rather than launch without it.
 
-## What the issuer needs
+## Gaps in the identity provider
 
-Record each row in `plan/survey.md`.
+Most gaps the survey finds have a fix that keeps the identity provider as the issuer:
 
-| Requirement                                                                                                                                                                                             | If the identity provider can't                                             |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| Clients identified by a client ID metadata document URL ([4.1](https://personalagentprotocol.org/docs/spec#agent-identity))                                                                             | Register the Personal Agents you accept by `client_id` URL. Reject others. |
-| `private_key_jwt` with `ES256`, and assertion `aud` exactly the issuer ([4.1](https://personalagentprotocol.org/docs/spec#agent-identity))                                                              | A separate issuer.                                                         |
-| PKCE `S256`, exact `redirect_uri` with loopback ports, `iss` in every redirect ([4.2](https://personalagentprotocol.org/docs/spec#direct-sign-in))                                                      | A separate issuer.                                                         |
-| A refresh token from every sign-in, and no scopes beyond those requested ([4.4](https://personalagentprotocol.org/docs/spec#refresh-tokens), [4.7](https://personalagentprotocol.org/docs/spec#scopes)) | Usually configuration. Otherwise a separate issuer.                        |
-| RFC 7009 revocation ([4.6](https://personalagentprotocol.org/docs/spec#revocation))                                                                                                                     | A separate issuer.                                                         |
-| `grant_types_supported` and `protected_resources` in its metadata ([3.2](https://personalagentprotocol.org/docs/spec#oauth-server))                                                                     | A metadata handler, if the issuer is on your domain.                       |
-| Tokens that say which `client_id` they were issued to ([5.3](https://personalagentprotocol.org/docs/spec#session-verification))                                                                         | Introspection.                                                             |
-| The device grant, if you offer Device Sign-In ([4.3](https://personalagentprotocol.org/docs/spec#device-sign-in))                                                                                       | Offer Direct Sign-In only.                                                 |
-| A custom grant, if you offer [Mediated Sign-In](https://personalagentprotocol.org/docs/extensions/mediated-sign-in)                                                                                     | A grant handler in front of the token endpoint.                            |
+- No client ID metadata documents: register the Personal Agents you accept by `client_id` URL, and
+  reject others ([4.1](https://personalagentprotocol.org/docs/spec#agent-identity)).
+- Refresh tokens or granted scopes that don't follow
+  [4.4](https://personalagentprotocol.org/docs/spec#refresh-tokens) and
+  [4.7](https://personalagentprotocol.org/docs/spec#scopes): usually configuration.
+- No `client_id` in its access tokens: introspection
+  ([5.3](https://personalagentprotocol.org/docs/spec#session-verification)).
+- No device grant: offer Direct Sign-In only.
+- No `protected_resources` or `grant_types_supported` in its metadata: a handler at the metadata
+  URL, if the issuer is on your domain
+  ([3.2](https://personalagentprotocol.org/docs/spec#oauth-server)).
+- No custom grant: a handler in front of the token endpoint, if you offer Mediated Sign-In.
 
-Resource indicators matter only for services that accept only their own tokens, such as MCP
-servers. DPoP is optional.
+Gaps in client authentication or the authorization flow need a separate issuer: `private_key_jwt`
+with `ES256` and an assertion `aud` of exactly the issuer
+([4.1](https://personalagentprotocol.org/docs/spec#agent-identity)), PKCE `S256`, exact
+`redirect_uri` matching, and `iss` in every redirect
+([4.2](https://personalagentprotocol.org/docs/spec#direct-sign-in)), and RFC 7009 revocation
+([4.6](https://personalagentprotocol.org/docs/spec#revocation)).
 
 ## The identity provider is the issuer
 
@@ -70,12 +74,11 @@ flowchart LR
   GW -.->|validate tokens| IdP
 ```
 
-Two gaps can be closed with a small handler instead of a second issuer. If the issuer is on a
-domain you control, a handler at the metadata URL can add `protected_resources` and
-`grant_types_supported` to the provider's metadata. A handler at the token endpoint can take the
-Mediated Sign-In grant, check credentials through the provider's API, and pass everything else
-through, if the provider can issue tokens for a sign-in your server completed. A gap in the
-authorization flow itself needs a separate issuer.
+The metadata handler serves the provider's metadata with `protected_resources` and
+`grant_types_supported` added, and keeps the `issuer` and every endpoint exactly as the provider
+serves them. The Mediated Sign-In handler takes that grant, checks credentials through the
+provider's API, and passes every other request through. It works only if the provider can issue
+tokens for a sign-in your server completed.
 
 ## An issuer only for Personal Agents, on the identity provider
 
