@@ -76,8 +76,9 @@ flowchart LR
   GW -.->|first-party tokens| IdP
 ```
 
-If services behind the gateway accept only identity provider tokens, the gateway can pass them a
-credential that allows no more than the agent token's scopes
+Your services may accept only the identity provider's tokens. If so, the gateway can check the
+agent's token and call them with a credential they do accept, for the same user. That credential
+can't allow more than the agent's token does
 ([guides](https://personalagentprotocol.org/docs/0.3/guides#company-internal)).
 
 ### Discovery
@@ -116,6 +117,7 @@ sequenceDiagram
   AS->>B: Redirect to the identity provider
   B->>IdP: Existing sign-in
   IdP->>AS: The account that signed in
+  Note over AS,IdP: Or your existing login page,<br/>or the issuer's own sign-in
   AS->>B: Consent page
   AS->>PA: code and iss = agent issuer, through the browser
   PA->>AS: Token request with client assertion
@@ -139,6 +141,7 @@ sequenceDiagram
   PA->>U: Link and code
   U->>AS: Open the link
   AS->>IdP: Existing sign-in
+  Note over AS,IdP: Or your existing login page,<br/>or the issuer's own sign-in
   AS->>U: Confirm the code, consent page
   PA->>AS: Poll the token endpoint
   AS->>PA: access_token, refresh_token, scope
