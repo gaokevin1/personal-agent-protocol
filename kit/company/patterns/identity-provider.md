@@ -158,7 +158,7 @@ sequenceDiagram
   PA->>AS: Mediated Sign-In grant with credentials
   AS->>IdP: Check credentials
   IdP->>AS: Valid, and the account
-  Note over AS,IdP: The issuer, or the identity provider, sends the User a one-time code
+  Note over AS,IdP: One-time code sent to the User
   AS->>PA: code_required, sign_in_id
   PA->>AS: sign_in_id, one_time_code
   AS->>AS: Check the code
