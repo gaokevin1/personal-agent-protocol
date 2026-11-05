@@ -56,7 +56,8 @@ front of its token endpoint (`patterns/token-endpoint.md`).
 
 A separate OAuth server, such as `https://agents.example.com`, meets
 [4.8](https://personalagentprotocol.org/docs/spec#oauth-additions) itself, and signs Users in
-through the identity provider, for example with OpenID Connect or SAML. Personal Agents never see
+through the identity provider, for example with OpenID Connect or SAML, or by sending them to your
+existing login page and completing the request through the issuer's API. Personal Agents never see
 that connection.
 
 - Needs: its own metadata, a way to sign Users in through the identity provider, and resources and
