@@ -9,8 +9,6 @@ choice is which server Personal Agents use as the Company's issuer
   alone.
 - **The identity provider is the issuer.** Personal Agents are one more OAuth client there. Until
   you're ready to let them sign in, set `auth.disabled`.
-- **An issuer only for Personal Agents, on the identity provider.** For example,
-  `https://auth.example.com/agents`, sharing accounts, servers, and keys with the main issuer.
 - **A separate issuer.** Another OAuth server issues Personal Agents' tokens and signs Users in
   through the identity provider.
 
@@ -20,9 +18,7 @@ In every option with an issuer, Users sign in the way they do today.
 flowchart TD
   start([Do tasks need the User's account?]) -->|No| none[No issuer, signed-out Sessions only]
   start -->|Yes| gaps{Does it have a gap that<br/>needs a separate issuer?}
-  gaps -->|No| limit{Can it limit Personal Agents<br/>by client?}
-  limit -->|Yes| idp[The identity provider is the issuer]
-  limit -->|No| sub[An issuer only for Personal Agents,<br/>on the identity provider]
+  gaps -->|No| idp[The identity provider is the issuer]
   gaps -->|Yes| agent[A separate issuer]
   idp -.->|Not ready for sign-in| disabled[Set auth.disabled]
 ```
@@ -51,9 +47,10 @@ including `protected_resources` ([3.2](https://personalagentprotocol.org/docs/0.
 - Needs: the metadata fields in [3.2](https://personalagentprotocol.org/docs/0.3/spec#oauth-server),
   protected resource metadata on each domain naming the provider, and a consent page that shows
   the Personal Agent's `client_id` domain (`patterns/sign-in.md`).
-- Watch for: first-party scopes granted by default. Limit Personal Agents by client
-  ([guides](https://personalagentprotocol.org/docs/0.3/guides#company-agent-issuer)). Leave `openid`
-  out of `scopes_supported`, or describe it, since Personal Agents don't use ID tokens.
+- Watch for: first-party scopes granted by default. Limit Personal Agents by client. If the provider
+  can't, a second issuer on it, such as `https://auth.example.com/agents`, can serve only Personal
+  Agents ([guides](https://personalagentprotocol.org/docs/0.3/guides#company-agent-issuer)). Leave
+  `openid` out of `scopes_supported`, or describe it, since Personal Agents don't use ID tokens.
 
 ```mermaid
 flowchart LR
@@ -65,15 +62,6 @@ flowchart LR
 
 If you offer Mediated Sign-In and the provider can't add a grant type, put a small grant handler in
 front of its token endpoint (`patterns/token-endpoint.md`).
-
-## An issuer only for Personal Agents, on the identity provider
-
-If the identity provider can't limit scopes or sign-in by client, a second issuer on it, such as
-`https://auth.example.com/agents`, can serve only Personal Agents. It shares accounts, servers, and
-signing keys with the main issuer
-([guides](https://personalagentprotocol.org/docs/0.3/guides#company-agent-issuer)). The domain's
-protected resource metadata lists both issuers, and `auth.issuer` names this one, as in
-[Discovery](#discovery) below.
 
 ## A separate issuer
 

@@ -35,10 +35,9 @@ protocol plans to remove it, on a date set when version 1.0 is published. Choose
 to Direct or Device Sign-In, and record when you plan to add those.
 
 **Issuer** ([3.2](https://personalagentprotocol.org/docs/spec#oauth-server)). Whether the existing
-identity provider is the issuer, with `auth.disabled` until sign-in is ready, or an issuer only for
-Personal Agents sits on it, or a separate issuer signs Users in through it. Decide before launch,
-because changing the issuer later makes every User sign in again. See
-`patterns/identity-provider.md`.
+identity provider is the issuer, with `auth.disabled` until sign-in is ready, or a separate issuer
+signs Users in through it. Decide before you publish `poppy.json`, because changing the issuer later
+makes every User sign in again. See `patterns/identity-provider.md`.
 
 **Scopes** ([4.7](https://personalagentprotocol.org/docs/spec#scopes)). Which scopes to offer,
 usually the OAuth scopes the Company already has, where each one
