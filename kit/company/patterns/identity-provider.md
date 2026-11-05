@@ -1,8 +1,8 @@
 # Pattern: the issuer and an existing identity provider
 
 Poppy sign-in is plain OAuth ([4](https://personalagentprotocol.org/docs/spec#oauth)), so a
-Company's existing identity provider, such as a CIAM service, can usually stay in place. The choice
-is which server Personal Agents use as the Company's issuer
+Company's existing identity provider, in-house or from a vendor, can usually stay in place. The
+choice is which server Personal Agents use as the Company's issuer
 ([3.2](https://personalagentprotocol.org/docs/spec#oauth-server)):
 
 - **No issuer.** The Company offers signed-out Sessions only, which rely on the Session header
